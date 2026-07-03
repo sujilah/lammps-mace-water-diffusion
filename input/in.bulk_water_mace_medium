@@ -1,0 +1,73 @@
+units metal
+atom_style atomic
+atom_modify map yes
+newton on
+boundary p p p
+
+read_data bulk_continue.data
+
+mass 1 1.008
+mass 2 15.999
+
+pair_style mace no_domain_decomposition
+pair_coeff * * mace_mp_medium-lammps.pt H O
+
+neighbor 2.0 bin
+neigh_modify every 1 delay 0 check yes
+
+timestep 0.001
+
+compute myTemp all temp
+compute myPress all pressure myTemp
+
+thermo 50
+thermo_style custom step pe etotal c_myPress c_myPress[1] c_myPress[2] c_myPress[3] density
+
+minimize 1.0e-6 1.0e-8 100 1000
+
+reset_timestep 0
+
+group hydrogen type 1
+group oxygen type 2
+
+compute msd_all_raw all msd com no
+compute msd_H_raw hydrogen msd com no
+compute msd_O_raw oxygen msd com no
+
+compute msd_all_avg all msd com no average yes
+compute msd_H_avg hydrogen msd com no average yes
+compute msd_O_avg oxygen msd com no average yes
+
+variable MSD_all_raw equal c_msd_all_raw[4]
+variable MSD_H_raw equal c_msd_H_raw[4]
+variable MSD_O_raw equal c_msd_O_raw[4]
+
+variable MSD_all_avg equal c_msd_all_avg[4]
+variable MSD_H_avg equal c_msd_H_avg[4]
+variable MSD_O_avg equal c_msd_O_avg[4]
+
+thermo 50
+thermo_style custom step temp pe ke etotal c_myPress c_myPress[1] c_myPress[2] c_myPress[3] density v_MSD_all_raw v_MSD_H_raw v_MSD_O_raw v_MSD_all_avg v_MSD_H_avg v_MSD_O_avg
+
+dump xyzout all xyz 100 bulk_water_mace_medium.xyz
+dump_modify xyzout element H O
+
+dump unwrap all custom 100 bulk_water_mace_medium_unwrapped.lammpstrj id type x y z xu yu zu ix iy iz
+dump_modify unwrap sort id
+
+fix pressout all ave/time 10 10 100 c_myPress c_myPress[1] c_myPress[2] c_myPress[3] file pressure_tensor_medium.dat
+
+fix msdout_raw all ave/time 10 10 100 v_MSD_all_raw v_MSD_H_raw v_MSD_O_raw file msd_medium_raw_comno.dat
+
+fix msdout_avg all ave/time 10 10 100 v_MSD_all_avg v_MSD_H_avg v_MSD_O_avg file msd_medium_avg_yes_comno.dat
+
+velocity all create 600.0 12345 mom yes rot yes dist gaussian
+
+fix 1 all nvt temp 300.0 300.0 0.1
+
+run 5000
+
+unfix 1
+unfix pressout
+unfix msdout_raw
+unfix msdout_avg

@@ -1,0 +1,70 @@
+units metal
+atom_style atomic
+atom_modify map yes
+newton on
+boundary p p p
+
+read_data bulk_continue.data
+
+mass 1 1.008
+mass 2 15.999
+
+pair_style mace no_domain_decomposition
+pair_coeff * * harram_bulk_v1.model-lammps.pt H O
+
+neighbor 2.0 bin
+neigh_modify every 1 delay 0 check yes
+
+timestep 0.001
+
+# Temperature and pressure computes
+compute myTemp all temp
+compute myPress all pressure myTemp
+
+# Minimization ringan sebelum MD lanjutan
+thermo 50
+thermo_style custom step pe etotal c_myPress c_myPress[1] c_myPress[2] c_myPress[3] density
+
+minimize 1.0e-6 1.0e-8 100 1000
+
+reset_timestep 0
+
+# Groups
+group hydrogen type 1
+group oxygen type 2
+
+# MSD computes
+compute msd_all all msd com yes
+compute msd_H hydrogen msd com yes
+compute msd_O oxygen msd com yes
+
+variable MSD_all equal c_msd_all[4]
+variable MSD_H equal c_msd_H[4]
+variable MSD_O equal c_msd_O[4]
+
+# Thermo output untuk MD
+thermo 50
+thermo_style custom step temp pe ke etotal c_myPress c_myPress[1] c_myPress[2] c_myPress[3] density v_MSD_all v_MSD_H v_MSD_O
+
+dump 1 all xyz 100 bulk_water_msd_continue.xyz
+dump_modify 1 element H O
+
+# Simpan pressure tensor
+# kolom: step, P, Pxx, Pyy, Pzz
+fix pressout all ave/time 10 10 100 c_myPress c_myPress[1] c_myPress[2] c_myPress[3] file pressure_tensor_msd_continue.dat
+
+# Simpan MSD
+# kolom: step, MSD_all, MSD_H, MSD_O
+fix msdout all ave/time 10 10 100 v_MSD_all v_MSD_H v_MSD_O file msd_bulk_continue.dat
+
+# Velocity awal 600 K
+velocity all create 600.0 12345 mom yes rot yes dist gaussian
+
+# NVT target 300 K
+fix 1 all nvt temp 300.0 300.0 0.1
+
+run 5000
+
+unfix 1
+unfix pressout
+unfix msdout
