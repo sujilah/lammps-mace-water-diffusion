@@ -1,0 +1,17 @@
+Diffusion coefficient statistics
+================================
+Input file: diffusion_window_summary.dat
+Number of windows: 13
+
+All windows:
+  mean D = 3.91429982e-06 cm^2/s
+  std  D = 7.13331861e-06 cm^2/s
+  min  D = -1.04880736e-06 cm^2/s
+  max  D = 2.54500630e-05 cm^2/s
+
+Valid windows criterion: D > 0, CI_low > 0, R2 >= 0.5
+Number of valid windows: 3
+  mean D valid = 1.35138376e-05 cm^2/s
+  std  D valid = 1.06037539e-05 cm^2/s
+  min  D valid = 5.18257265e-06 cm^2/s
+  max  D valid = 2.54500630e-05 cm^2/s
